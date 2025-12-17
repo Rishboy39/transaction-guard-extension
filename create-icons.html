@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator for Transaction Guard</title>
+</head>
+<body>
+  <h1>Icon Generator</h1>
+  <p>Open this file in a browser and right-click each canvas to save as PNG:</p>
+  
+  <canvas id="icon16" width="16" height="16"></canvas>
+  <label>16x16 - Right click and save as icon16.png</label><br><br>
+  
+  <canvas id="icon48" width="48" height="48"></canvas>
+  <label>48x48 - Right click and save as icon48.png</label><br><br>
+  
+  <canvas id="icon128" width="128" height="128"></canvas>
+  <label>128x128 - Right click and save as icon128.png</label><br><br>
+  
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      
+      // Gradient background
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw shield icon
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = size / 16;
+      
+      // Shield shape
+      ctx.beginPath();
+      ctx.moveTo(size * 0.5, size * 0.15);
+      ctx.lineTo(size * 0.7, size * 0.25);
+      ctx.lineTo(size * 0.7, size * 0.5);
+      ctx.quadraticCurveTo(size * 0.7, size * 0.7, size * 0.5, size * 0.85);
+      ctx.quadraticCurveTo(size * 0.3, size * 0.7, size * 0.3, size * 0.5);
+      ctx.lineTo(size * 0.3, size * 0.25);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Checkmark inside shield
+      ctx.strokeStyle = '#667eea';
+      ctx.lineWidth = size / 12;
+      ctx.beginPath();
+      ctx.moveTo(size * 0.4, size * 0.5);
+      ctx.lineTo(size * 0.48, size * 0.58);
+      ctx.lineTo(size * 0.6, size * 0.42);
+      ctx.stroke();
+    }
+    
+    drawIcon(document.getElementById('icon16'), 16);
+    drawIcon(document.getElementById('icon48'), 48);
+    drawIcon(document.getElementById('icon128'), 128);
+  </script>
+</body>
+</html>
+

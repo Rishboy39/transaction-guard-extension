@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Guard</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div class="header">
+      <h1>🛡️ Transaction Guard</h1>
+    </div>
+    
+    <div class="status-section">
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="toggleSwitch">
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label" id="toggleLabel">Off</span>
+      </div>
+      
+      <div class="status-indicator" id="statusIndicator">
+        <div class="status-dot inactive"></div>
+        <span>Monitoring: <strong id="statusText">Inactive</strong></span>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <p class="info-text">
+        Transaction Guard monitors web pages for financial transactions and alerts you about potential scams.
+      </p>
+    </div>
+    
+    <div class="stats-section" id="statsSection" style="display: none;">
+      <div class="stat-item">
+        <span class="stat-label">Pages Scanned:</span>
+        <span class="stat-value" id="pagesScanned">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Transactions Found:</span>
+        <span class="stat-value" id="transactionsFound">0</span>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+
