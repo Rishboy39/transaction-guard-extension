@@ -39,14 +39,23 @@ function startMonitoring() {
 }
 
 function stopMonitoring() {
-  if (overlay) {
-    overlay.remove();
-    overlay = null;
-  }
-  
   if (scanInterval) {
     clearInterval(scanInterval);
     scanInterval = null;
+  }
+  
+  // Update status indicator in overlay if it exists
+  if (overlay) {
+    const statusEl = overlay.querySelector('#tg-status');
+    const resultEl = overlay.querySelector('#tg-result');
+    if (statusEl) {
+      statusEl.style.display = 'flex';
+      statusEl.querySelector('.tg-status-indicator').className = 'tg-status-indicator';
+      statusEl.querySelector('span').textContent = 'Monitoring paused';
+    }
+    if (resultEl) {
+      resultEl.style.display = 'none';
+    }
   }
 }
 
@@ -60,6 +69,13 @@ function createOverlay() {
       <div class="tg-header">
         <span class="tg-icon">🛡️</span>
         <span class="tg-title">Transaction Guard</span>
+        <div class="tg-toggle-container">
+          <label class="tg-toggle-label">
+            <input type="checkbox" id="tg-monitoring-toggle" checked>
+            <span class="tg-toggle-slider"></span>
+          </label>
+          <span class="tg-toggle-text" id="tg-toggle-text">On</span>
+        </div>
         <button class="tg-close" id="tg-close-btn">×</button>
       </div>
       <div class="tg-content">
@@ -72,18 +88,145 @@ function createOverlay() {
           <div class="tg-result-text" id="tg-result-text"></div>
           <div class="tg-result-details" id="tg-result-details"></div>
         </div>
+        <div class="tg-action-buttons">
+          <button class="tg-action-btn tg-amazon-btn" id="tg-amazon-btn">
+            <span class="tg-btn-icon">🛒</span>
+            <span class="tg-btn-text">Amazon</span>
+          </button>
+          <button class="tg-action-btn tg-help-btn" id="tg-help-btn">
+            <span class="tg-btn-icon">📞</span>
+            <span class="tg-btn-text">Call Help</span>
+          </button>
+          <button class="tg-action-btn tg-send-money-btn" id="tg-send-money-btn">
+            <span class="tg-btn-icon">💰</span>
+            <span class="tg-btn-text">Send Money</span>
+          </button>
+        </div>
+        <div class="tg-send-money-form" id="tg-send-money-form" style="display: none;">
+          <h3>Send Money</h3>
+          <div class="tg-form-group">
+            <label for="tg-recipient-name">Recipient Name</label>
+            <input type="text" id="tg-recipient-name" placeholder="Enter name">
+          </div>
+          <div class="tg-form-group">
+            <label for="tg-amount">Amount</label>
+            <input type="number" id="tg-amount" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="tg-form-actions">
+            <button class="tg-form-btn tg-cancel-btn" id="tg-cancel-send">Cancel</button>
+            <button class="tg-form-btn tg-send-btn" id="tg-confirm-send">Send</button>
+          </div>
+        </div>
+        <div class="tg-send-money-success" id="tg-send-money-success" style="display: none;">
+          <div class="tg-success-icon">✅</div>
+          <div class="tg-success-text">Money sent successfully!</div>
+          <button class="tg-form-btn tg-close-success-btn" id="tg-close-success">Close</button>
+        </div>
       </div>
+      <button class="tg-settings-btn" id="tg-settings-btn">⚙️</button>
     </div>
   `;
   
   document.body.appendChild(overlay);
   
+  // Monitoring toggle handler
+  const monitoringToggle = overlay.querySelector('#tg-monitoring-toggle');
+  const toggleText = overlay.querySelector('#tg-toggle-text');
+  
+  // Set initial state
+  chrome.storage.local.get(['isActive'], (result) => {
+    const currentActive = result.isActive !== false; // Default to true
+    monitoringToggle.checked = currentActive;
+    toggleText.textContent = currentActive ? 'On' : 'Off';
+  });
+  
+  monitoringToggle.addEventListener('change', (e) => {
+    const isActive = e.target.checked;
+    toggleText.textContent = isActive ? 'On' : 'Off';
+    chrome.storage.local.set({ isActive });
+    
+    if (isActive) {
+      startMonitoring();
+    } else {
+      stopMonitoring();
+    }
+  });
+  
   // Close button handler
   overlay.querySelector('#tg-close-btn').addEventListener('click', () => {
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+    }
     stopMonitoring();
     chrome.storage.local.set({ isActive: false });
     const toggleSwitch = document.querySelector('#toggleSwitch');
     if (toggleSwitch) toggleSwitch.checked = false;
+  });
+  
+  // Amazon button handler
+  overlay.querySelector('#tg-amazon-btn').addEventListener('click', () => {
+    window.open('https://www.amazon.com', '_blank');
+  });
+  
+  // Help button handler
+  overlay.querySelector('#tg-help-btn').addEventListener('click', () => {
+    // For now, just show an alert. In production, this could trigger a phone call
+    alert('Calling family member for help...\n\n(Feature coming soon - this will dial your emergency contact)');
+  });
+  
+  // Send Money button handler
+  const sendMoneyBtn = overlay.querySelector('#tg-send-money-btn');
+  const sendMoneyForm = overlay.querySelector('#tg-send-money-form');
+  const sendMoneySuccess = overlay.querySelector('#tg-send-money-success');
+  const cancelBtn = overlay.querySelector('#tg-cancel-send');
+  const confirmSendBtn = overlay.querySelector('#tg-confirm-send');
+  const closeSuccessBtn = overlay.querySelector('#tg-close-success');
+  
+  sendMoneyBtn.addEventListener('click', () => {
+    sendMoneyForm.style.display = 'block';
+    sendMoneyBtn.style.display = 'none';
+  });
+  
+  cancelBtn.addEventListener('click', () => {
+    sendMoneyForm.style.display = 'none';
+    sendMoneyBtn.style.display = 'flex';
+    overlay.querySelector('#tg-recipient-name').value = '';
+    overlay.querySelector('#tg-amount').value = '';
+  });
+  
+  confirmSendBtn.addEventListener('click', () => {
+    const name = overlay.querySelector('#tg-recipient-name').value.trim();
+    const amount = overlay.querySelector('#tg-amount').value.trim();
+    
+    if (!name || !amount || parseFloat(amount) <= 0) {
+      alert('Please enter a valid name and amount');
+      return;
+    }
+    
+    // Show success message
+    sendMoneyForm.style.display = 'none';
+    sendMoneySuccess.style.display = 'block';
+    
+    // Reset form
+    overlay.querySelector('#tg-recipient-name').value = '';
+    overlay.querySelector('#tg-amount').value = '';
+    
+    // Hide success after 3 seconds or when close is clicked
+    setTimeout(() => {
+      sendMoneySuccess.style.display = 'none';
+      sendMoneyBtn.style.display = 'flex';
+    }, 3000);
+  });
+  
+  closeSuccessBtn.addEventListener('click', () => {
+    sendMoneySuccess.style.display = 'none';
+    sendMoneyBtn.style.display = 'flex';
+  });
+  
+  // Settings button handler
+  overlay.querySelector('#tg-settings-btn').addEventListener('click', () => {
+    alert('Settings panel coming soon!\n\nHere you can configure:\n- Emergency contacts\n- Amazon preferences\n- Send money settings');
   });
   
   // Make overlay draggable
@@ -91,52 +234,10 @@ function createOverlay() {
 }
 
 function makeDraggable(element) {
+  // Disable dragging for full-height overlay - it's fixed to the right side
+  // The header can still be used for visual purposes but won't drag
   const header = element.querySelector('.tg-header');
-  let isDragging = false;
-  let currentX;
-  let currentY;
-  let initialX;
-  let initialY;
-  let xOffset = 0;
-  let yOffset = 0;
-  
-  header.addEventListener('mousedown', dragStart);
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('mouseup', dragEnd);
-  
-  function dragStart(e) {
-    if (e.target.id === 'tg-close-btn') return;
-    
-    initialX = e.clientX - xOffset;
-    initialY = e.clientY - yOffset;
-    
-    if (e.target === header || header.contains(e.target)) {
-      isDragging = true;
-    }
-  }
-  
-  function drag(e) {
-    if (isDragging) {
-      e.preventDefault();
-      currentX = e.clientX - initialX;
-      currentY = e.clientY - initialY;
-      
-      xOffset = currentX;
-      yOffset = currentY;
-      
-      setTranslate(currentX, currentY, element);
-    }
-  }
-  
-  function dragEnd() {
-    initialX = currentX;
-    initialY = currentY;
-    isDragging = false;
-  }
-  
-  function setTranslate(xPos, yPos, el) {
-    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
-  }
+  header.style.cursor = 'default';
 }
 
 function scanForTransactions() {
